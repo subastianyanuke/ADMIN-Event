@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Event Ticketing</title>
+    <title>Admin Event Ticketing - QR + Edit Approval + Search</title>
     <style>
         :root { --bg-dark: #0f172a; --bg-card: #1e293b; --bg-input: #334155; --text-primary: #f1f5f9; --text-secondary: #94a3b8; --accent: #3b82f6; --accent-hover: #2563eb; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --border: #475569; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -19,8 +19,12 @@
         button.btn-success { background: var(--success); width: auto; padding: 8px 12px; font-size: 12px; }
         button.btn-edit { background: var(--warning); width: auto; padding: 8px 12px; font-size: 12px; }
         button.btn-verify-all { background: var(--success); width: auto; padding: 10px 20px; font-size: 14px; }
+        button.btn-qr { background: var(--accent); width: auto; padding: 8px 12px; font-size: 12px; }
+        button.btn-scan { background: var(--success); width: auto; padding: 10px 20px; font-size: 14px; }
+        button.btn-approve { background: var(--success); width: auto; padding: 8px 12px; font-size: 12px; }
+        button.btn-reject { background: var(--danger); width: auto; padding: 8px 12px; font-size: 12px; }
         #app-section { display: none; width: 100%; }
-        .sidebar { width: 250px; background: var(--bg-card); height: 100vh; padding: 20px 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); flex-shrink: 0; }
+        .sidebar { width: 260px; background: var(--bg-card); height: 100vh; padding: 20px 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); flex-shrink: 0; overflow-y: auto; }
         .sidebar h1 { text-align: center; color: var(--accent); font-size: 20px; margin-bottom: 30px; }
         .nav-item { padding: 15px 25px; color: var(--text-secondary); cursor: pointer; transition: 0.3s; border-left: 4px solid transparent; }
         .nav-item:hover, .nav-item.active { background: var(--bg-input); color: var(--text-primary); border-left-color: var(--accent); }
@@ -28,7 +32,7 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         .header h2 { font-size: 24px; }
         .btn-add { background: var(--success); width: auto; padding: 10px 20px; }
-        .table-container { background: var(--bg-card); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+        .table-container { background: var(--bg-card); border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
         th { background: var(--bg-input); color: var(--text-secondary); }
@@ -46,8 +50,30 @@
         .badge-active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         .badge-inactive { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
         .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .badge-info { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+        .badge-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
         .toast { position: fixed; bottom: 20px; right: 20px; background: var(--success); color: white; padding: 15px 25px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; z-index: 200; }
         .table-img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; }
+        .table-qr { width: 60px; height: 60px; object-fit: contain; border-radius: 5px; background: white; padding: 2px; cursor: pointer; }
+        .qr-preview { max-width: 300px; width: 100%; border: 4px solid var(--accent); border-radius: 12px; padding: 8px; background: white; }
+        .verify-result { padding: 20px; border-radius: 8px; text-align: center; }
+        .verify-result.valid { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); }
+        .verify-result.invalid { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); }
+        .checkin-box { background: var(--bg-input); padding: 20px; border-radius: 8px; margin-bottom: 15px; }
+        .checkin-box h4 { color: var(--accent); margin-bottom: 10px; }
+        .checkin-box p { margin-bottom: 5px; }
+        .alasan-box { background: var(--bg-input); padding: 12px; border-radius: 6px; margin: 8px 0; font-size: 13px; max-width: 400px; white-space: normal; word-break: break-word; }
+        
+        /* Search bar styles */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-container input { margin-bottom: 0; padding-left: 40px; padding-right: 40px; border-radius: 6px; }
+        .search-container .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.1rem; pointer-events: none; }
+        .search-container .clear-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 1.4rem; display: none; width: auto; padding: 0 5px; }
+        .search-container .clear-btn:hover { color: var(--accent); }
+        .search-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; }
+        .highlight { background-color: #fbbf24; color: #000; padding: 0 3px; border-radius: 3px; }
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .alert-info { background: rgba(59,130,246,0.1); color: var(--accent); border: 1px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -64,10 +90,12 @@
         <div class="sidebar">
             <h1>EVENT PANEL</h1>
             <div class="nav-item active" onclick="switchPage('data-event', this)">DATA EVENT</div>
-            <div class="nav-item" onclick="switchPage('input-produk', this)">INPUT PRODUK</div>
+            <div class="nav-item" onclick="switchPage('input-produk', this)">INPUT TIKET</div>
             <div class="nav-item" onclick="switchPage('data-pesanan', this)">DATA PESANAN</div>
-            <div class="nav-item" onclick="switchPage('verifikasi-pesanan', this)">VERIFIKASI PEMBAYARAN</div>
-            <div class="nav-item" onclick="switchPage('laporan', this)">LAPORAN PENJUALAN</div>
+            <div class="nav-item" onclick="switchPage('verifikasi-pesanan', this)">VERIFIKASI BAYAR</div>
+            <div class="nav-item" onclick="switchPage('izin-ubah', this)">IZIN UBAH PESANAN</div>
+            <div class="nav-item" onclick="switchPage('scan-qr', this)">SCAN QR / CHECK-IN</div>
+            <div class="nav-item" onclick="switchPage('laporan', this)">LAPORAN</div>
         </div>
         <div class="main-content">
             <div id="page-content"></div>
@@ -84,12 +112,37 @@
             </div>
         </div>
     </div>
+    
+    <div class="modal-overlay" id="qr-modal-overlay">
+        <div class="modal" style="text-align:center;">
+            <h3 id="qr-modal-title">QR Code</h3>
+            <div id="qr-modal-body" style="text-align:center;"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeQRModal()">Tutup</button>
+                <button class="btn-save" onclick="downloadQRFromModal()">Download</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="izin-modal-overlay">
+        <div class="modal">
+            <h3 id="izin-modal-title">Proses Izin Ubah Pesanan</h3>
+            <div id="izin-modal-body"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeIzinModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+    
     <div class="toast" id="toast"></div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuy_-CWrHqzgG7k4gzOS5NjbWOCtPeQ-ISDiCVk-Tq0Y14fNsMNyJ0f1jmM4YpaahT/exec'; // GANTI INI
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbovt39rmQJ74Zo_WX3Z2Xgl5dU2oA8LPEUQrmdUWdapIWnEM4QmajT6POW-PG3O8t/exec'; // GANTI INI
     const VALID_USER = "Tian_XIRPL", VALID_PASS = "qwerty";
-    let currentSheet = '', currentAction = '', currentEditId = '', autoRefreshInterval;
+    let currentSheet = '', currentAction = '', currentEditId = '', autoRefreshInterval, currentQRUrl = '';
+    
+    // Cache data untuk search
+    let cacheDataEvent = [], cacheDataTiket = [], cacheDataPesanan = [], cacheDataPayments = [], cacheDataIzin = [], cacheDataCheckIn = [], cacheDataLaporan = [];
 
     function checkLogin() {
         if (document.getElementById('username').value === VALID_USER && document.getElementById('password').value === VALID_PASS) {
@@ -107,27 +160,56 @@
         
         if (page === 'data-event') {
             currentSheet = 'Sheet1';
-            content.innerHTML = `<div class="header"><h2>Data Event</h2><button class="btn-add" onclick="openModal('add-event')">+ Tambah Event</button></div>
-                <div class="table-container"><table id="table-event"><thead><tr><th>ID</th><th>Gambar</th><th>Nama Event</th><th>Tanggal</th><th>Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
+            content.innerHTML = `<div class="header"><h2>Data Event</h2><div style="display:flex; gap:10px; flex-wrap:wrap;"><button class="btn-qr" onclick="generateAllQR('Sheet1')">Generate Semua QR</button><button class="btn-add" onclick="openModal('add-event')">+ Tambah Event</button></div></div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchEvent" placeholder="Cari event berdasarkan ID atau nama..." oninput="filterTable('event')"><button class="clear-btn" onclick="clearSearchInput('searchEvent','event')">&times;</button><div id="searchEventMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-event"><thead><tr><th>ID</th><th>Gambar</th><th>QR</th><th>Nama Event</th><th>Tanggal</th><th>Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
             loadData('Sheet1');
         } else if (page === 'input-produk') {
             currentSheet = 'Sheet2';
-            content.innerHTML = `<div class="header"><h2>Input Produk (Tiket)</h2><button class="btn-add" onclick="openModal('add-produk')">+ Tambah Tiket</button></div>
-                <div class="table-container"><table id="table-produk"><thead><tr><th>ID</th><th>Gambar</th><th>Nama Tiket</th><th>Harga</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
+            content.innerHTML = `<div class="header"><h2>Input Tiket</h2><div style="display:flex; gap:10px; flex-wrap:wrap;"><button class="btn-qr" onclick="generateAllQR('Sheet2')">Generate Semua QR</button><button class="btn-add" onclick="openModal('add-produk')">+ Tambah Tiket</button></div></div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchTiket" placeholder="Cari tiket berdasarkan ID atau nama..." oninput="filterTable('tiket')"><button class="clear-btn" onclick="clearSearchInput('searchTiket','tiket')">&times;</button><div id="searchTiketMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-produk"><thead><tr><th>ID</th><th>Gambar</th><th>QR</th><th>Nama Tiket</th><th>Harga</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
             loadData('Sheet2');
         } else if (page === 'data-pesanan') {
             currentSheet = 'Sheet3';
-            content.innerHTML = `<div class="header"><h2>Data Pesanan</h2><button class="btn-danger" style="width:auto; padding:10px 20px; font-size:14px;" onclick="deleteAllPesanan()"><i class="bi bi-trash"></i> Hapus Semua Pesanan</button></div>
-                <div class="table-container"><table id="table-pesanan"><thead><tr><th>ID Pesanan</th><th>Nama Pemesan</th><th>Total Harga</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
+            content.innerHTML = `<div class="header"><h2>Data Pesanan</h2><button class="btn-danger" style="width:auto; padding:10px 20px; font-size:14px;" onclick="deleteAllPesanan()">Hapus Semua</button></div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchPesanan" placeholder="Cari pesanan berdasarkan ID atau nama pemesan..." oninput="filterTable('pesanan')"><button class="clear-btn" onclick="clearSearchInput('searchPesanan','pesanan')">&times;</button><div id="searchPesananMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-pesanan"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total</th><th>Tanggal</th><th>Status</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
             loadData('Sheet3');
         } else if (page === 'verifikasi-pesanan') {
-            // Tambahan tombol Verifikasi Semua Pembayaran
-            content.innerHTML = `<div class="header"><h2>Verifikasi Pembayaran Pesanan</h2><button class="btn-verify-all" onclick="verifyAllPayments()"><i class="bi bi-check2-all"></i> Verifikasi Semua</button></div>
-                <div class="table-container"><table id="table-ajuan"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total Bayar</th><th>Bukti Bayar</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
+            content.innerHTML = `<div class="header"><h2>Verifikasi Pembayaran</h2><button class="btn-verify-all" onclick="verifyAllPayments()">Verifikasi Semua</button></div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchPayment" placeholder="Cari berdasarkan ID pesanan atau nama..." oninput="filterTable('payment')"><button class="clear-btn" onclick="clearSearchInput('searchPayment','payment')">&times;</button><div id="searchPaymentMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-ajuan"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total</th><th>Bukti</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>`;
             loadPayments();
+        } else if (page === 'izin-ubah') {
+            content.innerHTML = `<div class="header"><h2>Izin Ubah Pesanan</h2></div>
+                <div class="alert alert-info"><b>ℹ️ Informasi:</b> Daftar pesanan yang diajukan user untuk diubah. Setujui agar user dapat mengedit pesanannya. Jika ditolak, status kembali ke semula.</div>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchIzin" placeholder="Cari berdasarkan ID pesanan atau nama..." oninput="filterTable('izin')"><button class="clear-btn" onclick="clearSearchInput('searchIzin','izin')">&times;</button><div id="searchIzinMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-izin"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total</th><th>Alasan User</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+                <h3 style="margin-top:30px; color:var(--success);">Riwayat Izin Edit Diberikan</h3>
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchIzinHistory" placeholder="Cari riwayat izin..." oninput="filterTable('izinHistory')"><button class="clear-btn" onclick="clearSearchInput('searchIzinHistory','izinHistory')">&times;</button><div id="searchIzinHistoryMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-izin-granted"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total</th><th>Keterangan</th><th>Status</th></tr></thead><tbody></tbody></table></div>`;
+            loadIzinUbah();
+        } else if (page === 'scan-qr') {
+            content.innerHTML = `<div class="header"><h2>Scan QR & Check-In Tiket</h2></div>
+                <div style="background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--border);">
+                    <h3 style="color: var(--accent); margin-bottom: 20px;">Manual Input ID Tiket</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                        <input type="text" id="manual-id-tiket" placeholder="Masukkan ID Tiket (cth: TKT001)" style="margin-bottom:0; flex:1; min-width:200px;">
+                        <button class="btn-scan" onclick="verifyTicketManual()" style="width:auto; padding:12px 20px;">Cek Tiket</button>
+                    </div>
+                    <div id="verify-result" style="margin-top:20px;"></div>
+                </div>
+                <div style="background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--border); margin-top:20px;">
+                    <h3 style="color: var(--accent); margin-bottom: 15px;">Riwayat Check-In Terbaru</h3>
+                    <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchCheckIn" placeholder="Cari check-in berdasarkan ID atau nama..." oninput="filterTable('checkIn')"><button class="clear-btn" onclick="clearSearchInput('searchCheckIn','checkIn')">&times;</button><div id="searchCheckInMeta" class="search-meta"></div></div>
+                    <div class="table-container"><table id="table-checkin"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>ID Tiket</th><th>Status</th><th>Keterangan</th></tr></thead><tbody></tbody></table></div>
+                </div>`;
+            loadCheckInHistory();
         } else if (page === 'laporan') {
             content.innerHTML = `<div class="header"><h2>Laporan Penjualan</h2></div>
-                <div class="table-container"><table id="table-laporan"><thead><tr><th>ID Pesanan</th><th>Nama Pemesan</th><th>Total Harga</th><th>Status</th></tr></thead><tbody></tbody></table></div>`;
+                <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="searchLaporan" placeholder="Cari laporan berdasarkan ID atau nama..." oninput="filterTable('laporan')"><button class="clear-btn" onclick="clearSearchInput('searchLaporan','laporan')">&times;</button><div id="searchLaporanMeta" class="search-meta"></div></div>
+                <div class="table-container"><table id="table-laporan"><thead><tr><th>ID Pesanan</th><th>Nama</th><th>Total</th><th>Status</th></tr></thead><tbody></tbody></table></div>`;
             loadLaporan();
         }
     }
@@ -136,22 +218,95 @@
         try {
             const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=${sheetName}`);
             const data = await res.json();
-            if (data.success) renderTable(sheetName, data.data);
-        } catch (err) { console.error('Error load:', err); }
+            if (data.success) {
+                if (sheetName === 'Sheet1') { cacheDataEvent = data.data || []; filterTable('event'); }
+                else if (sheetName === 'Sheet2') { cacheDataTiket = data.data || []; filterTable('tiket'); }
+                else if (sheetName === 'Sheet3') { cacheDataPesanan = data.data || []; filterTable('pesanan'); }
+            }
+        } catch (err) { console.error('Error:', err); }
+    }
+
+    // =====================================================
+    // SEARCH FUNCTIONS
+    // =====================================================
+    function clearSearchInput(inputId, type) {
+        const input = document.getElementById(inputId);
+        input.value = '';
+        const clearBtn = input.parentElement.querySelector('.clear-btn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        filterTable(type);
+    }
+
+    function toggleClearBtnAdmin(input) {
+        const clearBtn = input.parentElement.querySelector('.clear-btn');
+        if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
+    }
+
+    function highlightAdmin(text, query) {
+        if (!query || !text) return esc(text);
+        const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+        return esc(text).replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    function escapeRegExp(string) { return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    function filterTable(type) {
+        const queryMap = {
+            event: 'searchEvent', tiket: 'searchTiket', pesanan: 'searchPesanan',
+            payment: 'searchPayment', izin: 'searchIzin', izinHistory: 'searchIzinHistory',
+            checkIn: 'searchCheckIn', laporan: 'searchLaporan'
+        };
+        const inputId = queryMap[type];
+        if (!inputId) return;
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const query = input.value.trim().toLowerCase();
+        toggleClearBtnAdmin(input);
+        
+        let source = [], filtered = [];
+        switch(type) {
+            case 'event': source = cacheDataEvent; break;
+            case 'tiket': source = cacheDataTiket; break;
+            case 'pesanan': source = cacheDataPesanan; break;
+            case 'payment': source = cacheDataPayments; break;
+            case 'izin': source = cacheDataIzin.filter(x => x.STATUS === "Menunggu Izin Ubah"); break;
+            case 'izinHistory': source = cacheDataIzin.filter(x => x.STATUS === "Izin Edit Diberikan" || (x.ALASAN_UBAH && (x.ALASAN_UBAH.includes("IZIN DIBERIKAN ADMIN") || x.ALASAN_UBAH.includes("IZIN DITOLAK ADMIN")))); break;
+            case 'checkIn': source = cacheDataCheckIn; break;
+            case 'laporan': source = cacheDataLaporan; break;
+        }
+        
+        if (query) {
+            filtered = source.filter(row => {
+                const fields = Object.values(row).map(v => String(v || '').toLowerCase());
+                return fields.some(val => val.includes(query));
+            });
+        } else {
+            filtered = source;
+        }
+        
+        const metaId = inputId + 'Meta';
+        const meta = document.getElementById(metaId);
+        if (meta) {
+            if (query) meta.innerHTML = `🔍 Menampilkan <b>${filtered.length}</b> dari <b>${source.length}</b> data`;
+            else meta.innerHTML = '';
+        }
+        
+        // Render hasil
+        if (type === 'event') renderTable('Sheet1', filtered, query);
+        else if (type === 'tiket') renderTable('Sheet2', filtered, query);
+        else if (type === 'pesanan') renderTable('Sheet3', filtered, query);
+        else if (type === 'payment') renderPayments(filtered, query);
+        else if (type === 'izin') renderIzinTunggu(filtered, query);
+        else if (type === 'izinHistory') renderIzinHistory(filtered, query);
+        else if (type === 'checkIn') renderCheckIn(filtered, query);
+        else if (type === 'laporan') renderLaporan(filtered, query);
     }
 
     function extractGoogleDriveId(url) {
         if (!url) return "";
         const text = String(url).trim();
-        const patterns = [
-            /\/file\/d\/([a-zA-Z0-9_-]+)/i,
-            /\/d\/([a-zA-Z0-9_-]+)/i,
-            /[?&]id=([a-zA-Z0-9_-]+)/i
-        ];
-        for (const pattern of patterns) {
-            const match = text.match(pattern);
-            if (match && match[1]) return match[1];
-        }
+        const patterns = [/\/file\/d\/([a-zA-Z0-9_-]+)/i, /\/d\/([a-zA-Z0-9_-]+)/i, /[?&]id=([a-zA-Z0-9_-]+)/i];
+        for (const p of patterns) { const m = text.match(p); if (m && m[1]) return m[1]; }
         return "";
     }
 
@@ -160,75 +315,67 @@
         if (url === null || url === undefined) return placeholder;
         let raw = String(url).trim();
         if (!raw) return placeholder;
-
         const urlMatch = raw.match(/https?:\/\/[^\s"'<>]+/i);
-        let u = (urlMatch ? urlMatch[0] : raw).trim();
-        u = u.replace(/^[("'`\s]+|[)"'`,;\s]+$/g, "");
-
+        let u = (urlMatch ? urlMatch[0] : raw).trim().replace(/^[("'`\s]+|[)"'`,;\s]+$/g, "");
         if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(u)) return u;
         if (!/^https?:\/\//i.test(u)) return placeholder;
-
         try {
             const parsed = new URL(u);
             const host = parsed.hostname.toLowerCase();
             const googleId = extractGoogleDriveId(u);
-            if (googleId && (host.includes("drive.google.com") || host.includes("docs.google.com") || host.includes("googleusercontent.com"))) {
-                return `https://drive.google.com/thumbnail?id=${encodeURIComponent(googleId)}&sz=w1200`;
-            }
-            if (host.includes("encrypted-tbn0.gstatic.com") || host.includes("encrypted-tbn1.gstatic.com") || host.includes("encrypted-tbn2.gstatic.com") || host.includes("encrypted-tbn3.gstatic.com")) return u;
-            if (host.includes("googleusercontent.com")) return u;
-            if (host.includes("dropbox.com")) {
-                parsed.searchParams.delete("dl");
-                parsed.searchParams.set("raw", "1");
-                return parsed.toString();
-            }
-            if (host.includes("dropboxusercontent.com")) return u;
-            if (host === "github.com" && parsed.pathname.includes("/blob/")) {
-                const parts = parsed.pathname.split("/").filter(Boolean);
-                if (parts.length >= 5 && parts[2] === "blob") return `https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/${parts.slice(3).join("/")}`;
-            }
+            if (googleId && (host.includes("drive.google.com") || host.includes("docs.google.com") || host.includes("googleusercontent.com"))) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(googleId)}&sz=w1200`;
+            if (host.includes("encrypted-tbn") || host.includes("googleusercontent.com")) return u;
+            if (host.includes("dropbox.com")) { parsed.searchParams.delete("dl"); parsed.searchParams.set("raw", "1"); return parsed.toString(); }
             return u;
-        } catch (error) {
-            console.warn("URL gambar tidak valid:", url, error);
-            return placeholder;
-        }
+        } catch (error) { return placeholder; }
     }
 
     function imageError(img, size = "400x200") {
         const googleId = img.dataset.googleId;
-        if (googleId && img.dataset.googleFallback !== "1") {
-            img.dataset.googleFallback = "1";
-            img.src = `https://lh3.googleusercontent.com/d/${encodeURIComponent(googleId)}=w1200`;
-            return;
-        }
-        img.onerror = null;
-        img.src = `https://placehold.co/${size}/f1f5f9/64748b?text=Image+Error`;
+        if (googleId && img.dataset.googleFallback !== "1") { img.dataset.googleFallback = "1"; img.src = `https://lh3.googleusercontent.com/d/${encodeURIComponent(googleId)}=w1200`; return; }
+        img.onerror = null; img.src = `https://placehold.co/${size}/f1f5f9/64748b?text=Image+Error`;
     }
 
-    function renderTable(sheetName, data) {
+    function esc(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function renderTable(sheetName, data, query = '') {
         let tbody;
         if (sheetName === 'Sheet1') {
             tbody = document.querySelector('#table-event tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Tidak ada data'}</td></tr>`; return; }
             data.forEach(row => {
                 let statusClass = row.STATUS === 'AKTIF' ? 'badge-active' : 'badge-inactive';
                 const img = fixImgUrl(row.GAMBAR, "50x50");
-                tbody.innerHTML += `<tr><td>${row.ID_EVENT}</td><td><img src="${img}" class="table-img" alt="img" data-google-id="${extractGoogleDriveId(row.GAMBAR)}" onerror="imageError(this, '50x50')"></td><td>${row.NAMA_EVENT}</td><td>${row.TANGGAL}</td><td>${row.LOKASI}</td><td><span class="badge ${statusClass}">${row.STATUS}</span></td><td><button class="btn-edit" onclick="openModal('edit-event', '${row.ID_EVENT}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet1', 'ID_EVENT', '${row.ID_EVENT}')">Hapus</button></td></tr>`;
+                const qrUrl = row.QR_EVENT || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT:${encodeURIComponent(row.ID_EVENT)}`;
+                tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_EVENT, query)}</td><td><img src="${img}" class="table-img" alt="img" data-google-id="${extractGoogleDriveId(row.GAMBAR)}" onerror="imageError(this, '50x50')"></td><td><img src="${qrUrl}" class="table-qr" alt="QR" onclick="showQRModal('QR Event - ${esc(row.NAMA_EVENT)}', '${qrUrl}')"></td><td>${highlightAdmin(row.NAMA_EVENT, query)}</td><td>${highlightAdmin(row.TANGGAL, query)}</td><td>${highlightAdmin(row.LOKASI, query)}</td><td><span class="badge ${statusClass}">${esc(row.STATUS)}</span></td><td><button class="btn-qr" onclick="generateSingleQR('Sheet1','ID_EVENT','${esc(row.ID_EVENT)}')">Regen QR</button><button class="btn-edit" onclick="openModal('edit-event', '${esc(row.ID_EVENT)}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet1', 'ID_EVENT', '${esc(row.ID_EVENT)}')">Hapus</button></td></tr>`;
             });
         } else if (sheetName === 'Sheet2') {
             tbody = document.querySelector('#table-produk tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Tidak ada data'}</td></tr>`; return; }
             data.forEach(row => {
                 let statusClass = row.STATUS === 'AKTIF' ? 'badge-active' : 'badge-inactive';
                 const img = fixImgUrl(row.GAMBAR, "50x50");
-                tbody.innerHTML += `<tr><td>${row.ID_TIKET}</td><td><img src="${img}" class="table-img" alt="img" data-google-id="${extractGoogleDriveId(row.GAMBAR)}" onerror="imageError(this, '50x50')"></td><td>${row.NAMA_TIKET}</td><td>Rp ${parseInt(row.HARGA || 0).toLocaleString('id-ID')}</td><td>${row.KUOTA}</td><td><span class="badge ${statusClass}">${row.STATUS}</span></td><td><button class="btn-edit" onclick="openModal('edit-produk', '${row.ID_TIKET}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet2', 'ID_TIKET', '${row.ID_TIKET}')">Hapus</button></td></tr>`;
+                const qrUrl = row.QR_TIKET || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TIKET:${encodeURIComponent(row.ID_TIKET)}`;
+                tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_TIKET, query)}</td><td><img src="${img}" class="table-img" alt="img" data-google-id="${extractGoogleDriveId(row.GAMBAR)}" onerror="imageError(this, '50x50')"></td><td><img src="${qrUrl}" class="table-qr" alt="QR" onclick="showQRModal('QR Tiket - ${esc(row.NAMA_TIKET)}', '${qrUrl}')"></td><td>${highlightAdmin(row.NAMA_TIKET, query)}</td><td>Rp ${parseInt(row.HARGA || 0).toLocaleString('id-ID')}</td><td>${highlightAdmin(row.KUOTA, query)}</td><td><span class="badge ${statusClass}">${esc(row.STATUS)}</span></td><td><button class="btn-qr" onclick="generateSingleQR('Sheet2','ID_TIKET','${esc(row.ID_TIKET)}')">Regen QR</button><button class="btn-edit" onclick="openModal('edit-produk', '${esc(row.ID_TIKET)}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet2', 'ID_TIKET', '${esc(row.ID_TIKET)}')">Hapus</button></td></tr>`;
             });
         } else if (sheetName === 'Sheet3') {
             tbody = document.querySelector('#table-pesanan tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Tidak ada data'}</td></tr>`; return; }
             data.forEach(row => {
-                let badgeClass = row.STATUS === 'LUNAS' || row.STATUS === 'Lunas' ? 'badge-active' : (row.STATUS === 'BATAL' || row.STATUS === 'Batal' ? 'badge-inactive' : 'badge-warning');
-                tbody.innerHTML += `<tr><td>${row.ID_PESANAN}</td><td>${row.NAMA_PEMESAN}</td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td>${row['TANGGAL PESAN']}</td><td><span class="badge ${badgeClass}">${row.STATUS}</span></td><td><button class="btn-edit" onclick="openModal('edit-pesanan', '${row.ID_PESANAN}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet3', 'ID_PESANAN', '${row.ID_PESANAN}')">Hapus</button></td></tr>`;
+                let badgeClass = 'badge-warning';
+                if (row.STATUS === 'Lunas' || row.STATUS === 'LUNAS') badgeClass = 'badge-active';
+                else if (row.STATUS === 'Batal' || row.STATUS === 'BATAL') badgeClass = 'badge-inactive';
+                else if (row.STATUS === 'Check-In') badgeClass = 'badge-info';
+                else if (row.STATUS === 'Izin Edit Diberikan') badgeClass = 'badge-purple';
+                tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}</td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td>${highlightAdmin(row['TANGGAL PESAN'], query)}</td><td><span class="badge ${badgeClass}">${highlightAdmin(row.STATUS, query)}</span></td><td style="max-width:300px; white-space:normal; font-size:12px;">${esc(row.ALASAN_UBAH || '-')}</td><td><button class="btn-edit" onclick="openModal('edit-pesanan', '${esc(row.ID_PESANAN)}')">Edit</button><button class="btn-danger" onclick="deleteRecord('Sheet3', 'ID_PESANAN', '${esc(row.ID_PESANAN)}')">Hapus</button></td></tr>`;
             });
         }
     }
@@ -237,48 +384,210 @@
         try {
             const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`);
             const data = await res.json();
-            const ajuan = data.data.filter(x => x.STATUS === "Menunggu Verifikasi Admin" || x.STATUS === "Menunggu Verifikasi");
-            const tbody = document.querySelector('#table-ajuan tbody');
-            tbody.innerHTML = '';
-            if(ajuan.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada pembayaran pending</td></tr>`; return; }
-            ajuan.forEach(row => {
-                const rawImg = row.BUKTI_PEMBAYARAN || row.BUKTI_PEMBAYRAN || row.GAMBAR || "";
-                const img = fixImgUrl(rawImg, "50x50");
-                const linkImg = rawImg ? fixImgUrl(rawImg, "1200x800") : img;
-                tbody.innerHTML += `<tr><td>${esc(row.ID_PESANAN)}</td><td>${esc(row.NAMA_PEMESAN)}<br><small class="text-muted">${esc(row.METODE_PEMBAYARAN || '-')}</small></td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td><a href="${esc(linkImg)}" target="_blank" rel="noopener noreferrer"><img src="${esc(img)}" class="table-img" alt="bukti pembayaran" onerror="imageError(this, '50x50')"></a></td><td><button class="btn-success" onclick="verifyPaymentAdmin('${esc(row.ID_PESANAN)}', 'Lunas')">Verifikasi (Lunas)</button><button class="btn-danger" onclick="verifyPaymentAdmin('${esc(row.ID_PESANAN)}', 'Batal')">Tolak (Batal)</button></td></tr>`;
-            });
-        } catch (err) { console.error('Error load payments:', err); }
+            cacheDataPayments = data.data.filter(x => x.STATUS === "Menunggu Verifikasi Admin" || x.STATUS === "Menunggu Verifikasi");
+            filterTable('payment');
+        } catch (err) { console.error('Error:', err); }
     }
 
-    // Fungsi baru untuk Verifikasi Semua Pembayaran
+    function renderPayments(data, query = '') {
+        const tbody = document.querySelector('#table-ajuan tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Tidak ada pembayaran pending'}</td></tr>`; return; }
+        data.forEach(row => {
+            const rawImg = row.BUKTI_PEMBAYARAN || row.BUKTI_PEMBAYRAN || row.GAMBAR || "";
+            const img = fixImgUrl(rawImg, "50x50");
+            const linkImg = rawImg ? fixImgUrl(rawImg, "1200x800") : img;
+            tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}<br><small style="color:var(--text-secondary)">${esc(row.METODE_PEMBAYARAN || '-')}</small></td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td><a href="${esc(linkImg)}" target="_blank" rel="noopener noreferrer"><img src="${esc(img)}" class="table-img" alt="bukti" onerror="imageError(this, '50x50')"></a></td><td><button class="btn-success" onclick="verifyPaymentAdmin('${esc(row.ID_PESANAN)}', 'Lunas')">Lunas</button><button class="btn-danger" onclick="verifyPaymentAdmin('${esc(row.ID_PESANAN)}', 'Batal')">Tolak</button></td></tr>`;
+        });
+    }
+
     async function verifyAllPayments() {
-        if (!confirm("Yakin ingin memverifikasi (melunaskan) SEMUA pembayaran yang menunggu verifikasi?")) return;
+        if (!confirm("Yakin ingin memverifikasi SEMUA pembayaran yang menunggu?")) return;
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'verifyAllPayments' }) });
             const data = await res.json();
-            if(data.success) { showToast(data.message || "Semua pembayaran berhasil diverifikasi", "success"); loadPayments(); loadData('Sheet3'); }
+            if(data.success) { showToast(data.message, "success"); loadPayments(); loadData('Sheet3'); }
             else { showToast("Error: " + data.message, "error"); }
         } catch(e) { showToast("Gagal koneksi", "error"); }
     }
 
     async function verifyPaymentAdmin(id, status) {
-        let ket = prompt("Masukkan keterangan verifikasi (Opsional):", status === 'Lunas' ? "Pembayaran diterima" : "Bukti tidak valid");
+        let ket = prompt("Masukkan keterangan:", status === 'Lunas' ? "Pembayaran diterima" : "Bukti tidak valid");
         if (ket === null) return;
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'verifyPayment', idVal: id, status: status, ket: ket }) });
             const data = await res.json();
-            if(data.success) { showToast("Status pembayaran diperbarui", "success"); loadPayments(); loadData('Sheet3'); }
+            if(data.success) { showToast("Status diperbarui", "success"); loadPayments(); loadData('Sheet3'); }
             else { showToast("Error: " + data.message, "error"); }
         } catch(e) { showToast("Gagal koneksi", "error"); }
     }
 
-    function esc(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+    // =====================================================
+    // IZIN UBAH PESANAN
+    // =====================================================
+    async function loadIzinUbah() {
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`);
+            const data = await res.json();
+            cacheDataIzin = data.data || [];
+            filterTable('izin');
+            filterTable('izinHistory');
+        } catch(err) { console.error('Error load izin:', err); }
+    }
+
+    function renderIzinTunggu(data, query = '') {
+        const tbody = document.querySelector('#table-izin tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Tidak ada pengajuan ubah yang menunggu'}</td></tr>`; return; }
+        data.forEach(row => {
+            let alasanUser = row.ALASAN_UBAH || '';
+            const alasanMatch = alasanUser.match(/Alasan User:\s*([^|]+)/);
+            if (alasanMatch) alasanUser = alasanMatch[1].trim();
+            tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}<br><small style="color:var(--text-secondary)">${esc(row.EMAIL || '')}</small></td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td><div class="alasan-box">${query ? highlightAdmin(alasanUser, query) : esc(alasanUser)}</div></td><td><button class="btn-approve" onclick="approveEditPesanan('${esc(row.ID_PESANAN)}')">Setujui</button><button class="btn-reject" onclick="rejectEditPesanan('${esc(row.ID_PESANAN)}')">Tolak</button></td></tr>`;
+        });
+    }
+
+    function renderIzinHistory(data, query = '') {
+        const tbody = document.querySelector('#table-izin-granted tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Belum ada riwayat izin edit'}</td></tr>`; return; }
+        data.slice().reverse().forEach(row => {
+            let keterangan = row.ALASAN_UBAH || '';
+            let badgeClass = 'badge-warning';
+            if (row.STATUS === 'Izin Edit Diberikan') badgeClass = 'badge-purple';
+            else if (keterangan.includes('IZIN DITOLAK')) badgeClass = 'badge-inactive';
+            else if (row.STATUS === 'Lunas' || row.STATUS === 'Menunggu Verifikasi Admin') badgeClass = 'badge-active';
+            tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}</td><td>Rp ${parseInt(row['TOTAL_HARGA'] || 0).toLocaleString('id-ID')}</td><td style="max-width:400px; white-space:normal; font-size:12px;">${query ? highlightAdmin(keterangan, query) : esc(keterangan)}</td><td><span class="badge ${badgeClass}">${esc(row.STATUS)}</span></td></tr>`;
+        });
+    }
+
+    async function approveEditPesanan(idPesanan) {
+        const keterangan = prompt("Masukkan keterangan untuk user (opsional):", "Diizinkan untuk mengedit pesanan");
+        if (keterangan === null) return;
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'approveEditPesanan', idVal: idPesanan, ket: keterangan }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data = await res.json();
+            if(data.success) { showToast(data.message, "success"); loadIzinUbah(); loadData('Sheet3'); }
+            else { showToast("Error: " + data.message, "error"); }
+        } catch(e) { showToast("Gagal koneksi", "error"); }
+    }
+
+    async function rejectEditPesanan(idPesanan) {
+        const keterangan = prompt("Masukkan alasan penolakan (opsional):", "Pengajuan ditolak");
+        if (keterangan === null) return;
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'rejectEditPesanan', idVal: idPesanan, ket: keterangan }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data = await res.json();
+            if(data.success) { showToast(data.message, "success"); loadIzinUbah(); loadData('Sheet3'); }
+            else { showToast("Error: " + data.message, "error"); }
+        } catch(e) { showToast("Gagal koneksi", "error"); }
+    }
+
+    // =====================================================
+    // QR CODE MANAGEMENT
+    // =====================================================
+    async function generateAllQR(sheetName) {
+        if (!confirm(`Yakin ingin generate ulang SEMUA QR Code di ${sheetName}?`)) return;
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllQR', sheet: sheetName }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data = await res.json();
+            if(data.success) { showToast(data.message, "success"); loadData(sheetName); }
+            else { showToast("Error: " + data.message, "error"); }
+        } catch(e) { showToast("Gagal koneksi", "error"); }
+    }
+
+    async function generateSingleQR(sheetName, idCol, idVal) {
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'generateQR', sheet: sheetName, idCol: idCol, idVal: idVal }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data = await res.json();
+            if(data.success) { showToast(data.message, "success"); loadData(sheetName); }
+            else { showToast("Error: " + data.message, "error"); }
+        } catch(e) { showToast("Gagal koneksi", "error"); }
+    }
+
+    function showQRModal(title, qrUrl) {
+        currentQRUrl = qrUrl;
+        document.getElementById('qr-modal-title').innerText = title;
+        document.getElementById('qr-modal-body').innerHTML = `<img src="${qrUrl}" class="qr-preview" alt="QR Code">`;
+        document.getElementById('qr-modal-overlay').style.display = 'flex';
+    }
+
+    function closeQRModal() { document.getElementById('qr-modal-overlay').style.display = 'none'; }
+
+    function downloadQRFromModal() {
+        if (!currentQRUrl) return;
+        fetch(currentQRUrl).then(r => r.blob()).then(blob => {
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'QR_Code.png'; a.click(); URL.revokeObjectURL(a.href);
+        }).catch(() => { window.open(currentQRUrl, '_blank'); });
+    }
+
+    function closeIzinModal() { document.getElementById('izin-modal-overlay').style.display = 'none'; }
+
+    // =====================================================
+    // QR SCAN / CHECK-IN
+    // =====================================================
+    async function verifyTicketManual() {
+        const idTiket = document.getElementById('manual-id-tiket').value.trim();
+        if (!idTiket) { return showToast("Masukkan ID Tiket dulu!", "error"); }
+        const resultBox = document.getElementById('verify-result');
+        resultBox.innerHTML = `<div style="text-align:center; padding:20px;"><p>Memeriksa tiket...</p></div>`;
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'verifyTicketQR', idVal: idTiket }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data = await res.json();
+            if (data.success && data.data) {
+                const t = data.data;
+                if (t.valid) {
+                    resultBox.innerHTML = `<div class="verify-result valid"><h3 style="color: var(--success); margin-bottom:15px;">✓ TIKET VALID</h3><div class="checkin-box"><h4>${esc(t.namaTiket)}</h4><p><b>Event:</b> ${esc(t.namaEvent)}</p><p><b>Tanggal:</b> ${esc(t.tanggalEvent)}</p><p><b>Lokasi:</b> ${esc(t.lokasiEvent)}</p><p><b>ID Tiket:</b> ${esc(t.idTiket)}</p><p><b>Kuota:</b> ${esc(t.kuota)}</p><p><b>Harga:</b> Rp ${parseInt(t.harga || 0).toLocaleString('id-ID')}</p></div><p style="color: var(--success); margin-bottom:15px;">${esc(t.message)}</p><button class="btn-scan" onclick="doCheckIn('${esc(t.idTiket)}')" style="width:100%; padding:15px; font-size:16px;">CHECK-IN TIKET</button></div>`;
+                } else {
+                    resultBox.innerHTML = `<div class="verify-result invalid"><h3 style="color: var(--danger); margin-bottom:10px;">✗ TIKET TIDAK VALID</h3><p>${esc(t.message)}</p><p style="margin-top:10px;"><b>ID Tiket:</b> ${esc(t.idTiket || idTiket)}</p></div>`;
+                }
+            } else {
+                resultBox.innerHTML = `<div class="verify-result invalid"><h3 style="color: var(--danger);">Error</h3><p>${esc(data.message || 'Gagal verifikasi')}</p></div>`;
+            }
+        } catch(e) {
+            resultBox.innerHTML = `<div class="verify-result invalid"><h3 style="color: var(--danger);">Koneksi Gagal</h3></div>`;
+        }
+    }
+
+    async function doCheckIn(idTiket) {
+        if (!confirm("Konfirmasi check-in untuk tiket ini?")) return;
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`);
+            const data = await res.json();
+            const pesanan = (data.data || []).find(p => String(p.ID_TIKET) === String(idTiket) && (p.STATUS === 'Lunas' || p.STATUS === 'LUNAS'));
+            if (!pesanan) { return showToast("Tidak ada pesanan Lunas untuk tiket ini!", "error"); }
+            const res2 = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'checkInTicket', idPesanan: pesanan.ID_PESANAN, idTiket: idTiket }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const data2 = await res2.json();
+            if (data2.success && data2.data) {
+                showToast("Check-in berhasil: " + data2.data.namaPemesan, "success");
+                document.getElementById('verify-result').innerHTML = `<div class="verify-result valid"><h3 style="color: var(--success); margin-bottom:10px;">✓ CHECK-IN BERHASIL</h3><div class="checkin-box"><p><b>Nama:</b> ${esc(data2.data.namaPemesan)}</p><p><b>ID Pesanan:</b> ${esc(data2.data.idPesanan)}</p><p><b>ID Tiket:</b> ${esc(data2.data.idTiket)}</p><p><b>Waktu Check-In:</b> ${esc(data2.data.waktuCheckIn)}</p></div></div>`;
+                loadCheckInHistory();
+            } else {
+                showToast(data2.data?.message || data2.message || "Gagal check-in", "error");
+            }
+        } catch(e) { showToast("Gagal koneksi", "error"); }
+    }
+
+    async function loadCheckInHistory() {
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`);
+            const data = await res.json();
+            cacheDataCheckIn = (data.data || []).filter(p => p.STATUS === 'Check-In');
+            filterTable('checkIn');
+        } catch(err) { console.error('Error:', err); }
+    }
+
+    function renderCheckIn(data, query = '') {
+        const tbody = document.querySelector('#table-checkin tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">${query ? 'Tidak ada data cocok' : 'Belum ada check-in'}</td></tr>`; return; }
+        data.slice().reverse().forEach(row => {
+            tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}</td><td>${highlightAdmin(row.ID_TIKET, query)}</td><td><span class="badge badge-info">Check-In</span></td><td>${esc(row.ALASAN_UBAH || '-')}</td></tr>`;
+        });
     }
 
     function normalizeDate(value) {
@@ -296,92 +605,45 @@
     }
 
     async function openModal(action, id = '') {
-        currentAction = action;
-        currentEditId = id;
+        currentAction = action; currentEditId = id;
         const modalTitle = document.getElementById('modal-title');
         const modalBody = document.getElementById('modal-body');
         const overlay = document.getElementById('modal-overlay');
-
         overlay.style.display = 'flex';
-        modalBody.innerHTML = '<p>Memuat data lama...</p>';
-
+        modalBody.innerHTML = '<p>Memuat data...</p>';
         try {
             if (action === 'add-event') {
                 modalTitle.innerText = 'Tambah Event';
-                modalBody.innerHTML = `
-                    <div class="form-group"><label>ID Event *</label><input type="text" id="m_ID_EVENT" placeholder="EVT001"></div>
-                    <div class="form-group"><label>Nama Event *</label><input type="text" id="m_NAMA_EVENT"></div>
-                    <div class="form-group"><label>Tanggal</label><input type="date" id="m_TANGGAL"></div>
-                    <div class="form-group"><label>Lokasi</label><input type="text" id="m_LOKASI"></div>
-                    <div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI_ACARA"></div>
-                    <div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" placeholder="https://..."></div>
-                    <div class="form-group"><label>Status</label><select id="m_STATUS"><option value="AKTIF">AKTIF</option><option value="NONAKTIF">NONAKTIF</option></select></div>`;
+                modalBody.innerHTML = `<div class="form-group"><label>ID Event *</label><input type="text" id="m_ID_EVENT" placeholder="EVT001"></div><div class="form-group"><label>Nama Event *</label><input type="text" id="m_NAMA_EVENT"></div><div class="form-group"><label>Tanggal</label><input type="date" id="m_TANGGAL"></div><div class="form-group"><label>Lokasi</label><input type="text" id="m_LOKASI"></div><div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI_ACARA"></div><div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" placeholder="https://..."></div><div class="form-group"><label>Status</label><select id="m_STATUS"><option value="AKTIF">AKTIF</option><option value="NONAKTIF">NONAKTIF</option></select></div>`;
                 return;
             }
             if (action === 'edit-event') {
                 modalTitle.innerText = 'Edit Event';
                 const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet1`).then(r => r.json());
                 const d = findById(res.data, 'ID_EVENT', id);
-                if (!d) { modalBody.innerHTML = '<p>Data event tidak ditemukan. Silakan muat ulang data.</p>'; return; }
-                modalBody.innerHTML = `
-                    <div class="form-group"><label>ID Event</label><input type="text" id="m_ID_EVENT" value="${esc(d.ID_EVENT)}" disabled></div>
-                    <div class="form-group"><label>Nama Event *</label><input type="text" id="m_NAMA_EVENT" value="${esc(d.NAMA_EVENT)}"></div>
-                    <div class="form-group"><label>Tanggal</label><input type="date" id="m_TANGGAL" value="${esc(normalizeDate(d.TANGGAL))}"></div>
-                    <div class="form-group"><label>Lokasi</label><input type="text" id="m_LOKASI" value="${esc(d.LOKASI)}"></div>
-                    <div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI_ACARA" value="${esc(d.DESKRIPSI_ACARA)}"></div>
-                    <div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" value="${esc(d.GAMBAR)}" placeholder="https://..."></div>
-                    <div class="form-group"><label>Status</label><select id="m_STATUS">
-                        <option value="AKTIF" ${String(d.STATUS).toUpperCase() === 'AKTIF' ? 'selected' : ''}>AKTIF</option>
-                        <option value="NONAKTIF" ${String(d.STATUS).toUpperCase() === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF</option>
-                    </select></div>`;
+                if (!d) { modalBody.innerHTML = '<p>Data tidak ditemukan.</p>'; return; }
+                modalBody.innerHTML = `<div class="form-group"><label>ID Event</label><input type="text" id="m_ID_EVENT" value="${esc(d.ID_EVENT)}" disabled></div><div class="form-group"><label>Nama Event *</label><input type="text" id="m_NAMA_EVENT" value="${esc(d.NAMA_EVENT)}"></div><div class="form-group"><label>Tanggal</label><input type="date" id="m_TANGGAL" value="${esc(normalizeDate(d.TANGGAL))}"></div><div class="form-group"><label>Lokasi</label><input type="text" id="m_LOKASI" value="${esc(d.LOKASI)}"></div><div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI_ACARA" value="${esc(d.DESKRIPSI_ACARA)}"></div><div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" value="${esc(d.GAMBAR)}" placeholder="https://..."></div><div class="form-group"><label>Status</label><select id="m_STATUS"><option value="AKTIF" ${String(d.STATUS).toUpperCase() === 'AKTIF' ? 'selected' : ''}>AKTIF</option><option value="NONAKTIF" ${String(d.STATUS).toUpperCase() === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF</option></select></div>`;
                 return;
             }
             if (action === 'add-produk' || action === 'edit-produk') {
                 modalTitle.innerText = action === 'add-produk' ? 'Tambah Tiket' : 'Edit Tiket';
-                const [resEvent, resTiket] = await Promise.all([
-                    fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet1`).then(r => r.json()),
-                    fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet2`).then(r => r.json())
-                ]);
+                const [resEvent, resTiket] = await Promise.all([fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet1`).then(r => r.json()), fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet2`).then(r => r.json())]);
                 const events = resEvent.success ? (resEvent.data || []) : [];
                 const d = action === 'edit-produk' ? findById(resTiket.data, 'ID_TIKET', id) : null;
-                if (action === 'edit-produk' && !d) { modalBody.innerHTML = '<p>Data tiket tidak ditemukan. Silakan muat ulang data.</p>'; return; }
+                if (action === 'edit-produk' && !d) { modalBody.innerHTML = '<p>Data tidak ditemukan.</p>'; return; }
                 let eventOptions = '<option value="">Pilih Event...</option>';
-                events.forEach(ev => {
-                    const selected = d && String(d.ID_EVENT).trim() === String(ev.ID_EVENT).trim() ? 'selected' : '';
-                    eventOptions += `<option value="${esc(ev.ID_EVENT)}" ${selected}>${esc(ev.ID_EVENT)} - ${esc(ev.NAMA_EVENT)}</option>`;
-                });
-                modalBody.innerHTML = `
-                    <div class="form-group"><label>ID Tiket *</label><input type="text" id="m_ID_TIKET" value="${esc(d?.ID_TIKET)}" ${d ? 'disabled' : ''} placeholder="TKT001"></div>
-                    <div class="form-group"><label>Pilih Event *</label><select id="m_ID_EVENT">${eventOptions}</select></div>
-                    <div class="form-group"><label>Nama Tiket *</label><input type="text" id="m_NAMA_TIKET" value="${esc(d?.NAMA_TIKET)}"></div>
-                    <div class="form-group"><label>Harga</label><input type="number" id="m_HARGA" value="${esc(d?.HARGA)}"></div>
-                    <div class="form-group"><label>Kuota</label><input type="number" id="m_KUOTA" value="${esc(d?.KUOTA)}"></div>
-                    <div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI" value="${esc(d?.DESKRIPSI)}"></div>
-                    <div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" value="${esc(d?.GAMBAR)}" placeholder="https://..."></div>
-                    <div class="form-group"><label>Status</label><select id="m_STATUS">
-                        <option value="AKTIF" ${d && String(d.STATUS).toUpperCase() === 'AKTIF' ? 'selected' : ''}>AKTIF</option>
-                        <option value="NONAKTIF" ${d && String(d.STATUS).toUpperCase() === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF</option>
-                    </select></div>`;
+                events.forEach(ev => { const selected = d && String(d.ID_EVENT).trim() === String(ev.ID_EVENT).trim() ? 'selected' : ''; eventOptions += `<option value="${esc(ev.ID_EVENT)}" ${selected}>${esc(ev.ID_EVENT)} - ${esc(ev.NAMA_EVENT)}</option>`; });
+                modalBody.innerHTML = `<div class="form-group"><label>ID Tiket *</label><input type="text" id="m_ID_TIKET" value="${esc(d?.ID_TIKET)}" ${d ? 'disabled' : ''} placeholder="TKT001"></div><div class="form-group"><label>Pilih Event *</label><select id="m_ID_EVENT">${eventOptions}</select></div><div class="form-group"><label>Nama Tiket *</label><input type="text" id="m_NAMA_TIKET" value="${esc(d?.NAMA_TIKET)}"></div><div class="form-group"><label>Harga</label><input type="number" id="m_HARGA" value="${esc(d?.HARGA)}"></div><div class="form-group"><label>Kuota</label><input type="number" id="m_KUOTA" value="${esc(d?.KUOTA)}"></div><div class="form-group"><label>Deskripsi</label><input type="text" id="m_DESKRIPSI" value="${esc(d?.DESKRIPSI)}"></div><div class="form-group"><label>URL Gambar</label><input type="text" id="m_GAMBAR" value="${esc(d?.GAMBAR)}" placeholder="https://..."></div><div class="form-group"><label>Status</label><select id="m_STATUS"><option value="AKTIF" ${d && String(d.STATUS).toUpperCase() === 'AKTIF' ? 'selected' : ''}>AKTIF</option><option value="NONAKTIF" ${d && String(d.STATUS).toUpperCase() === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF</option></select></div>`;
                 return;
             }
             if (action === 'edit-pesanan') {
                 modalTitle.innerText = 'Edit Status Pesanan';
                 const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`).then(r => r.json());
                 const d = findById(res.data, 'ID_PESANAN', id);
-                if (!d) { modalBody.innerHTML = '<p>Data pesanan tidak ditemukan. Silakan muat ulang data.</p>'; return; }
-                modalBody.innerHTML = `
-                    <div class="form-group"><label>Nama Pemesan</label><input type="text" id="m_NAMA_PEMESAN" value="${esc(d.NAMA_PEMESAN)}"></div>
-                    <div class="form-group"><label>Jumlah</label><input type="number" id="m_JUMLAH" value="${esc(d.JUMLAH)}"></div>
-                    <div class="form-group"><label>Status</label><select id="m_STATUS">
-                        <option value="Menunggu Verifikasi Admin" ${d.STATUS === 'Menunggu Verifikasi Admin' ? 'selected' : ''}>Menunggu</option>
-                        <option value="Lunas" ${d.STATUS === 'Lunas' ? 'selected' : ''}>Lunas</option>
-                        <option value="Batal" ${d.STATUS === 'Batal' ? 'selected' : ''}>Batal</option>
-                    </select></div>`;
+                if (!d) { modalBody.innerHTML = '<p>Data tidak ditemukan.</p>'; return; }
+                modalBody.innerHTML = `<div class="form-group"><label>Nama Pemesan</label><input type="text" id="m_NAMA_PEMESAN" value="${esc(d.NAMA_PEMESAN)}"></div><div class="form-group"><label>Jumlah</label><input type="number" id="m_JUMLAH" value="${esc(d.JUMLAH)}"></div><div class="form-group"><label>Status</label><select id="m_STATUS"><option value="Menunggu Verifikasi Admin" ${d.STATUS === 'Menunggu Verifikasi Admin' ? 'selected' : ''}>Menunggu Verifikasi</option><option value="Lunas" ${d.STATUS === 'Lunas' ? 'selected' : ''}>Lunas</option><option value="Check-In" ${d.STATUS === 'Check-In' ? 'selected' : ''}>Check-In</option><option value="Menunggu Izin Ubah" ${d.STATUS === 'Menunggu Izin Ubah' ? 'selected' : ''}>Menunggu Izin Ubah</option><option value="Izin Edit Diberikan" ${d.STATUS === 'Izin Edit Diberikan' ? 'selected' : ''}>Izin Edit Diberikan</option><option value="Batal" ${d.STATUS === 'Batal' ? 'selected' : ''}>Batal</option></select></div>`;
             }
-        } catch (error) {
-            console.error('Gagal memuat data lama:', error);
-            modalBody.innerHTML = '<p style="color:red">Gagal memuat data lama. Periksa koneksi dan URL Apps Script.</p>';
-        }
+        } catch (error) { modalBody.innerHTML = '<p style="color:red">Gagal memuat data.</p>'; }
     }
 
     function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
@@ -389,22 +651,11 @@
     async function saveData() {
         const btn = document.getElementById('btn-save-modal'); btn.disabled = true; btn.innerHTML = 'Menyimpan...';
         let payload = {}, postBody = {};
-        if (currentAction === 'add-event') {
-            payload = { ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_EVENT: document.getElementById('m_NAMA_EVENT').value, TANGGAL: document.getElementById('m_TANGGAL').value, LOKASI: document.getElementById('m_LOKASI').value, DESKRIPSI_ACARA: document.getElementById('m_DESKRIPSI_ACARA').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value };
-            postBody = { action: 'addData', sheet: 'Sheet1', payload: payload };
-        } else if (currentAction === 'edit-event') {
-            payload = { NAMA_EVENT: document.getElementById('m_NAMA_EVENT').value, TANGGAL: document.getElementById('m_TANGGAL').value, LOKASI: document.getElementById('m_LOKASI').value, DESKRIPSI_ACARA: document.getElementById('m_DESKRIPSI_ACARA').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value };
-            postBody = { action: 'updateData', sheet: 'Sheet1', idCol: 'ID_EVENT', idVal: currentEditId, payload: payload };
-        } else if (currentAction === 'add-produk') {
-            payload = { ID_TIKET: document.getElementById('m_ID_TIKET').value, ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_TIKET: document.getElementById('m_NAMA_TIKET').value, HARGA: document.getElementById('m_HARGA').value, KUOTA: document.getElementById('m_KUOTA').value, DESKRIPSI: document.getElementById('m_DESKRIPSI').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value };
-            postBody = { action: 'addData', sheet: 'Sheet2', payload: payload };
-        } else if (currentAction === 'edit-produk') {
-            payload = { ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_TIKET: document.getElementById('m_NAMA_TIKET').value, HARGA: document.getElementById('m_HARGA').value, KUOTA: document.getElementById('m_KUOTA').value, DESKRIPSI: document.getElementById('m_DESKRIPSI').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value };
-            postBody = { action: 'updateData', sheet: 'Sheet2', idCol: 'ID_TIKET', idVal: currentEditId, payload: payload };
-        } else if (currentAction === 'edit-pesanan') {
-            payload = { NAMA_PEMESAN: document.getElementById('m_NAMA_PEMESAN').value, JUMLAH: document.getElementById('m_JUMLAH').value, STATUS: document.getElementById('m_STATUS').value };
-            postBody = { action: 'updateData', sheet: 'Sheet3', idCol: 'ID_PESANAN', idVal: currentEditId, payload: payload };
-        }
+        if (currentAction === 'add-event') { payload = { ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_EVENT: document.getElementById('m_NAMA_EVENT').value, TANGGAL: document.getElementById('m_TANGGAL').value, LOKASI: document.getElementById('m_LOKASI').value, DESKRIPSI_ACARA: document.getElementById('m_DESKRIPSI_ACARA').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value }; postBody = { action: 'addData', sheet: 'Sheet1', payload: payload }; }
+        else if (currentAction === 'edit-event') { payload = { NAMA_EVENT: document.getElementById('m_NAMA_EVENT').value, TANGGAL: document.getElementById('m_TANGGAL').value, LOKASI: document.getElementById('m_LOKASI').value, DESKRIPSI_ACARA: document.getElementById('m_DESKRIPSI_ACARA').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value }; postBody = { action: 'updateData', sheet: 'Sheet1', idCol: 'ID_EVENT', idVal: currentEditId, payload: payload }; }
+        else if (currentAction === 'add-produk') { payload = { ID_TIKET: document.getElementById('m_ID_TIKET').value, ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_TIKET: document.getElementById('m_NAMA_TIKET').value, HARGA: document.getElementById('m_HARGA').value, KUOTA: document.getElementById('m_KUOTA').value, DESKRIPSI: document.getElementById('m_DESKRIPSI').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value }; postBody = { action: 'addData', sheet: 'Sheet2', payload: payload }; }
+        else if (currentAction === 'edit-produk') { payload = { ID_EVENT: document.getElementById('m_ID_EVENT').value, NAMA_TIKET: document.getElementById('m_NAMA_TIKET').value, HARGA: document.getElementById('m_HARGA').value, KUOTA: document.getElementById('m_KUOTA').value, DESKRIPSI: document.getElementById('m_DESKRIPSI').value, GAMBAR: document.getElementById('m_GAMBAR').value, STATUS: document.getElementById('m_STATUS').value }; postBody = { action: 'updateData', sheet: 'Sheet2', idCol: 'ID_TIKET', idVal: currentEditId, payload: payload }; }
+        else if (currentAction === 'edit-pesanan') { payload = { NAMA_PEMESAN: document.getElementById('m_NAMA_PEMESAN').value, JUMLAH: document.getElementById('m_JUMLAH').value, STATUS: document.getElementById('m_STATUS').value }; postBody = { action: 'updateData', sheet: 'Sheet3', idCol: 'ID_PESANAN', idVal: currentEditId, payload: payload }; }
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(postBody) });
             const data = await res.json();
@@ -415,7 +666,7 @@
     }
 
     async function deleteRecord(sheet, idCol, idVal) {
-        if (!confirm(`Yakin hapus data ${idVal}? Data yang berhubungan juga akan terhapus.`)) return;
+        if (!confirm(`Yakin hapus data ${idVal}?`)) return;
         if (sheet === 'Sheet1' && idCol === 'ID_EVENT') {
             try {
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEventWithRelations', idVal: idVal }) });
@@ -433,7 +684,7 @@
     }
 
     async function deleteAllPesanan() {
-        if (!confirm("Yakin ingin menghapus SEMUA data pesanan? Tindakan ini tidak bisa dibatalkan.")) return;
+        if (!confirm("Yakin ingin menghapus SEMUA data pesanan?")) return;
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteAllPesanan' }) });
             const data = await res.json();
@@ -444,11 +695,13 @@
 
     function startAutoRefresh() {
         autoRefreshInterval = setInterval(() => {
-            const activePage = document.querySelector('.nav-item.active').textContent;
+            const activePage = document.querySelector('.nav-item.active')?.textContent || '';
             if(activePage.includes('DATA EVENT')) loadData('Sheet1');
-            else if(activePage.includes('INPUT PRODUK')) loadData('Sheet2');
+            else if(activePage.includes('INPUT TIKET')) loadData('Sheet2');
             else if(activePage.includes('DATA PESANAN')) loadData('Sheet3');
-            else if(activePage.includes('VERIFIKASI PEMBAYARAN')) loadPayments();
+            else if(activePage.includes('VERIFIKASI')) loadPayments();
+            else if(activePage.includes('IZIN UBAH')) loadIzinUbah();
+            else if(activePage.includes('SCAN QR')) loadCheckInHistory();
             else if(activePage.includes('LAPORAN')) loadLaporan();
         }, 15000);
     }
@@ -464,18 +717,24 @@
         try {
             const res = await fetch(`${SCRIPT_URL}?action=getData&sheet=Sheet3`);
             const data = await res.json();
-            const tbody = document.querySelector('#table-laporan tbody');
-            tbody.innerHTML = '';
-            let totalLunas = 0;
-            data.data.forEach(row => {
-                let status = row.STATUS ? row.STATUS.toUpperCase() : '';
-                let harga = parseInt(row['TOTAL_HARGA'] || 0);
-                if(status === 'LUNAS') totalLunas += harga;
-                let badgeClass = status === 'LUNAS' ? 'badge-active' : (status === 'BATAL' ? 'badge-inactive' : 'badge-warning');
-                tbody.innerHTML += `<tr><td>${row.ID_PESANAN}</td><td>${row.NAMA_PEMESAN}</td><td>Rp ${harga.toLocaleString('id-ID')}</td><td><span class="badge ${badgeClass}">${status}</span></td></tr>`;
-            });
-            tbody.innerHTML += `<tr style="font-weight:bold; color: var(--success);"><td colspan="2">TOTAL PENDAPATAN (LUNAS)</td><td>Rp ${totalLunas.toLocaleString('id-ID')}</td><td></td></tr>`;
+            cacheDataLaporan = data.data || [];
+            filterTable('laporan');
         } catch (err) { console.error('Error laporan:', err); }
+    }
+
+    function renderLaporan(data, query = '') {
+        const tbody = document.querySelector('#table-laporan tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        let totalLunas = 0;
+        data.forEach(row => {
+            let status = row.STATUS ? row.STATUS.toUpperCase() : '';
+            let harga = parseInt(row['TOTAL_HARGA'] || 0);
+            if(status === 'LUNAS') totalLunas += harga;
+            let badgeClass = status === 'LUNAS' ? 'badge-active' : (status === 'BATAL' ? 'badge-inactive' : (status === 'CHECK-IN' ? 'badge-info' : 'badge-warning'));
+            tbody.innerHTML += `<tr><td>${highlightAdmin(row.ID_PESANAN, query)}</td><td>${highlightAdmin(row.NAMA_PEMESAN, query)}</td><td>Rp ${harga.toLocaleString('id-ID')}</td><td><span class="badge ${badgeClass}">${highlightAdmin(row.STATUS, query)}</span></td></tr>`;
+        });
+        tbody.innerHTML += `<tr style="font-weight:bold; color: var(--success);"><td colspan="2">TOTAL PENDAPATAN (LUNAS)</td><td>Rp ${totalLunas.toLocaleString('id-ID')}</td><td></td></tr>`;
     }
 </script>
 </body>
